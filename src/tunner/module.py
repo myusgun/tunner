@@ -2,6 +2,7 @@
 
 from misc.colored import *
 from tunner.case import ICase
+from tunner import sysopt
 from tunner import useropt
 
 from datetime import datetime
@@ -13,6 +14,8 @@ import traceback
 
 class Module:
     def __init__(self, module):
+        self.targets = []
+
         # properties
         self.passed = 0
         self.failed = 0
@@ -60,12 +63,17 @@ class Module:
 
     def init(self):
         try:
-            now = str(datetime.now()).split('.')[0]
-            print('[   {}   ] {}'.format(Constants.TIME, now))
-
             targets = (Target.functions(self.module) +
                        Target.classes(self.module))
             targets = sorted(targets, key=lambda x: x.name)
+
+            if sysopt.debug():
+                print('Targets')
+                print('| {}'.format(', '.join([t.name for t in targets])))
+                print('-' * 30)
+
+            now = str(datetime.now()).split('.')[0]
+            print(f'[   {Constants.TIME}   ] {now}')
 
             print(f'[{Constants.DOUBLE_LINE}] Running {len(targets)} tests')
 
@@ -76,7 +84,7 @@ class Module:
             if func:
                 func()
 
-            return targets
+            self.targets = targets
 
         except:
             print(traceback.format_exc(None if useropt.verbose() else 0))
@@ -109,21 +117,21 @@ class Module:
 
         print(f'[{Constants.DOUBLE_LINE}]')
 
-        print('[  {} ] {} tests'.format(Constants.SKIPPED, self.skipped))
-        print('[  {}  ] {} tests'.format(Constants.PASSED, self.passed))
-        print('[  {}  ] {} tests'.format(Constants.FAILED, self.failed))
+        print(f'[  {Constants.SKIPPED} ] {self.skipped} tests')
+        print(f'[  {Constants.PASSED}  ] {self.passed} tests')
+        print(f'[  {Constants.FAILED}  ] {self.failed} tests')
 
     def run(self):
-        targets = self.init()
+        self.init()
 
-        for target in targets:
+        for target in self.targets:
             if self.__jump_to_next(target):
                 continue
 
-            name = '{}.{}'.format(self.module.__name__, target.name)
+            name = f'{self.module.__name__}.{target.name}'
 
             print(f'[{Constants.SINGLE_LINE}]')
-            print('[ {}      ] {}'.format(Constants.RUN, name))
+            print(f'[ {Constants.RUN}      ] {name}')
 
             if not self.skip:
                 self.call(target)
@@ -135,7 +143,7 @@ class Module:
                 break
 
         print(f'[{Constants.SINGLE_LINE}]')
-        print('[   {}   ] {}'.format(Constants.TIME, ms(self.lifetime)))
+        print(f'[   {Constants.TIME}   ] {ms(self.lifetime)}')
 
         self.cleanup()
         self.deinit()
@@ -153,9 +161,6 @@ class Module:
 
 class Target:
     def __init__(self, name, obj):
-        def to_name(name):
-            return name.upper().replace('_', '-')
-
         self.name = to_name(name)
         self.unbounded = obj
         self.bounded = None
@@ -180,7 +185,7 @@ class Target:
             skip = is_patterned(self.name, useropt.skip())
 
         # although the target seems to be skipped,
-        #  target will be run forcely if target was given in options.
+        #  target will be run forcely if the target was given exactly.
         if skip and self.name in useropt.target():
             skip = False
 
@@ -195,7 +200,10 @@ class Target:
     @staticmethod
     def functions(module):
         tuples = inspect.getmembers(module, inspect.isfunction)
-        return [Target(name, obj) for name, obj in tuples if name.startswith('TC')]
+
+        def filter(name):
+            return useropt.target() and is_patterned(to_name(name), useropt.target())
+        return [Target(name, obj) for name, obj in tuples if filter(name)]
 
     @staticmethod
     def classes(module):
@@ -203,7 +211,10 @@ class Target:
             return inspect.isclass(obj) and issubclass(obj, ICase)
 
         tuples = inspect.getmembers(module, is_target_class)
-        return [Target(name, obj) for name, obj in tuples if name.startswith('TC')]
+
+        def filter(name):
+            return useropt.target() and is_patterned(to_name(name), useropt.target())
+        return [Target(name, obj) for name, obj in tuples if filter(name)]
 
 
 def ms(delta):
@@ -213,6 +224,10 @@ def ms(delta):
 def is_patterned(name, opts):
     import fnmatch
     return any(fnmatch.fnmatch(name, opt) for opt in opts)
+
+
+def to_name(name):
+    return name.upper().replace('_', '-')
 
 
 class Constants:

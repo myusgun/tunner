@@ -7,7 +7,7 @@ class Option:
     HELP = False
     VERBOSE = 0
     HIDE_SKIP = False
-    TARGET = ''
+    TARGET = ['TC-*']
     SKIP = ''
     NO_CLEANUP = False
     STOP_ON_FAIL = False
@@ -17,12 +17,12 @@ class Option:
 GENERAL_OPTIONS = {
     '--help, -h': 'show this',
     '-v, -vv, ...': 'set verbose level',
-    '--hide-skip': 'DO NOT show skipped target(s)'
 }
 
 CONTROL_OPTIONS = {
     '--target=<TC-nnnn[,TC-mmmm[,...]]>': 'set the target(s) (wildcard is available)',
     '--skip=<TC-nnnn[,TC-mmmm[,...]]>': 'skip target(s) (wildcard is available)',
+    '--hide-skip': 'DO NOT show skipped target(s)',
     '--no-cleanup': 'DO NOT call cleanup() function on end',
     '--stop-on-fail': 'stop on failure',
 }
@@ -59,7 +59,7 @@ def on(argv):
         Option.STOP_ON_FAIL = True
 
     elif argv.startswith('--var='):
-        key, value = __get_option_value(argv).split(':')
+        key, value = __get_option_value(argv).split(':', 1)
         Option.VARS[key] = value
 
     else:

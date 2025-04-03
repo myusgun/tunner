@@ -5,7 +5,7 @@ from . import useropt
 import sys
 
 
-class Alternatives:
+class Option:
     DEBUG = False
 
 
@@ -32,13 +32,13 @@ def __show(clazz):
 def init():
     if not Internal.INITIALIZED:
         try:
-            Alternatives.DEBUG = '--debug' in sys.argv
+            Option.DEBUG = '--debug' in sys.argv
 
             if not sys.argv[1].startswith('-'):
                 Internal.MODULE = sys.argv[1]
 
             if debug():
-                __show(Alternatives)
+                __show(Option)
                 __show(Internal)
 
             for argv in sys.argv[2:]:
@@ -63,7 +63,7 @@ def init():
 
 
 def debug():
-    return Alternatives.DEBUG
+    return Option.DEBUG
 
 
 def module():

@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-from . import argopt
+from . import sysopt
 from . import useropt
 from .module import Module
 
 
 def init():
-    return argopt.init()
+    return sysopt.init()
 
 
 def help(forced=False):
@@ -16,7 +16,7 @@ def help(forced=False):
 def run():
     try:
         from importlib import import_module
-        module = import_module(argopt.module())
+        module = import_module(sysopt.module())
 
         return Module(module).run()
 
